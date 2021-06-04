@@ -62,7 +62,7 @@ impl Tetromino {
 impl Distribution<Tetromino> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Tetromino {
         match rng.gen_range(1..=7) {
-            _ => Tetromino::Z,
+            _ => Tetromino::S,
             1 => Tetromino::I,
             2 => Tetromino::J,
             3 => Tetromino::L,
@@ -535,7 +535,7 @@ impl Game {
         }
     }
     fn mv(&mut self) {
-        if get_time() > self.time_since_move + 0.1 {
+        if get_time() > self.time_since_move + 0.3 {
             self.time_since_move = get_time();
             let before = self.board;
 
@@ -550,10 +550,22 @@ impl Game {
                                     self.board[y][x] = None;
                                 }
                             }
-                            Some(Tetromino::S) | Some(Tetromino::Z) => {
-                                if let None = self.board[y + 1][x] {
-                                    self.board[y + 1][x] = self.board[y][x];
-                                    self.board[y][x] = None;
+                            Some(Tetromino::S) => {
+                                if x > 0 {
+                                    if let None = self.board[y + 1][x] {
+                                        self.board[y + 1][x] = self.board[y][x];
+                                        self.board[y][x] = None;
+                                    }
+                                }
+                            }
+                            Some(Tetromino::Z) => {
+                                if x < 9 {
+                                    if let None = self.board[y + 1][x] {
+                                        if let None = self.board[y + 1][x + 1] {
+                                            self.board[y + 1][x] = self.board[y][x];
+                                            self.board[y][x] = None;
+                                        }
+                                    }
                                 }
                             }
                             None => {}
