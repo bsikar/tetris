@@ -46,11 +46,23 @@ impl Tetromino {
             Tetromino::Z => RED,
         }
     }
+    fn texture(&self, block: Block) -> Texture2D {
+        match *self {
+            Tetromino::I => block.i,
+            Tetromino::J => block.j,
+            Tetromino::L => block.l,
+            Tetromino::O => block.o,
+            Tetromino::S => block.s,
+            Tetromino::T => block.t,
+            Tetromino::Z => block.z,
+        }
+    }
 }
 
 impl Distribution<Tetromino> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Tetromino {
         match rng.gen_range(1..=7) {
+            _ => Tetromino::Z,
             1 => Tetromino::I,
             2 => Tetromino::J,
             3 => Tetromino::L,
@@ -69,50 +81,95 @@ struct Game {
     lines: u32,
     level: u8,
     next_tetromino: Tetromino,
+    current_tetromino: Tetromino,
+    //current_tetromino_rotation: u8,
     block: Block,
+    board: [[Option<Tetromino>; 10]; 23],
+    //active_board: [[Option<Tetromino>; 10]; 23],
+    time_since_move: f64,
 }
 
 impl Game {
+    fn generate_board(current_tetromino: Tetromino) -> [[Option<Tetromino>; 10]; 23] {
+        let mut board = [[None; 10]; 23];
+
+        match current_tetromino {
+            Tetromino::I => {
+                for i in 3..=6 {
+                    board[1][i] = Some(current_tetromino);
+                }
+            }
+            Tetromino::J => {
+                board[0][3] = Some(current_tetromino);
+                for i in 3..=5 {
+                    board[1][i] = Some(current_tetromino);
+                }
+            }
+            Tetromino::L => {
+                board[0][5] = Some(current_tetromino);
+                for i in 3..=5 {
+                    board[1][i] = Some(current_tetromino);
+                }
+            }
+            Tetromino::O => {
+                board[0][4] = Some(current_tetromino);
+                board[0][5] = Some(current_tetromino);
+                board[1][4] = Some(current_tetromino);
+                board[1][5] = Some(current_tetromino);
+            }
+            Tetromino::S => {
+                board[0][4] = Some(current_tetromino);
+                board[0][5] = Some(current_tetromino);
+                board[1][3] = Some(current_tetromino);
+                board[1][4] = Some(current_tetromino);
+            }
+            Tetromino::T => {
+                board[0][4] = Some(current_tetromino);
+                for i in 3..6 {
+                    board[1][i] = Some(current_tetromino);
+                }
+            }
+            Tetromino::Z => {
+                board[0][3] = Some(current_tetromino);
+                board[0][4] = Some(current_tetromino);
+                board[1][4] = Some(current_tetromino);
+                board[1][5] = Some(current_tetromino);
+            }
+        }
+
+        board
+    }
+
     fn new() -> Game {
+        let current_tetromino: Tetromino = rand::random();
+        let cyan_block = Texture2D::from_file_with_format(
+            include_bytes!("../assets/cyan_block.png"),
+            Some(ImageFormat::Png),
+        );
+        let gray_block = Texture2D::from_file_with_format(
+            include_bytes!("../assets/gray_block.png"),
+            Some(ImageFormat::Png),
+        );
+
         Game {
             font: load_ttf_font_from_bytes(include_bytes!("../assets/tetris-atari.ttf")).unwrap(),
             score: 0,
             lines: 0,
             level: 1,
             next_tetromino: rand::random(),
+            current_tetromino,
+            //current_tetromino_rotation: 0,
+            time_since_move: 0.,
+            board: Game::generate_board(current_tetromino),
             block: Block {
-                i: Texture2D::from_file_with_format(
-                    include_bytes!("../assets/cyan_block.png"),
-                    Some(ImageFormat::Png),
-                ),
-                j: Texture2D::from_file_with_format(
-                    include_bytes!("../assets/gray_block.png"),
-                    Some(ImageFormat::Png),
-                ),
-                l: Texture2D::from_file_with_format(
-                    include_bytes!("../assets/gray_block.png"),
-                    Some(ImageFormat::Png),
-                ),
-                o: Texture2D::from_file_with_format(
-                    include_bytes!("../assets/gray_block.png"),
-                    Some(ImageFormat::Png),
-                ),
-                s: Texture2D::from_file_with_format(
-                    include_bytes!("../assets/gray_block.png"),
-                    Some(ImageFormat::Png),
-                ),
-                t: Texture2D::from_file_with_format(
-                    include_bytes!("../assets/gray_block.png"),
-                    Some(ImageFormat::Png),
-                ),
-                z: Texture2D::from_file_with_format(
-                    include_bytes!("../assets/gray_block.png"),
-                    Some(ImageFormat::Png),
-                ),
-                gray: Texture2D::from_file_with_format(
-                    include_bytes!("../assets/gray_block.png"),
-                    Some(ImageFormat::Png),
-                ),
+                i: cyan_block,
+                j: gray_block,
+                l: gray_block,
+                o: gray_block,
+                s: gray_block,
+                t: gray_block,
+                z: gray_block,
+                gray: gray_block,
             },
         }
     }
@@ -135,7 +192,7 @@ impl Game {
             Tetromino::J => {
                 for i in 0..1 {
                     draw_texture_ex(
-                        block.i,
+                        block.j,
                         x - (2. * BLOCK_SIZE),
                         y,
                         tetromino.color(),
@@ -147,7 +204,7 @@ impl Game {
                 }
                 for i in 0..3 {
                     draw_texture_ex(
-                        block.i,
+                        block.j,
                         x - (i as f32 * BLOCK_SIZE),
                         y + BLOCK_SIZE,
                         tetromino.color(),
@@ -161,7 +218,7 @@ impl Game {
             Tetromino::L => {
                 for i in 0..2 {
                     draw_texture_ex(
-                        block.i,
+                        block.l,
                         x,
                         y + (i as f32 * BLOCK_SIZE),
                         tetromino.color(),
@@ -173,7 +230,7 @@ impl Game {
                 }
                 for i in 1..3 {
                     draw_texture_ex(
-                        block.i,
+                        block.l,
                         x - (i as f32 * BLOCK_SIZE),
                         y + BLOCK_SIZE,
                         tetromino.color(),
@@ -187,7 +244,7 @@ impl Game {
             Tetromino::O => {
                 for i in 0..2 {
                     draw_texture_ex(
-                        block.i,
+                        block.o,
                         x,
                         y + (i as f32 * BLOCK_SIZE),
                         tetromino.color(),
@@ -199,7 +256,7 @@ impl Game {
                 }
                 for i in 0..2 {
                     draw_texture_ex(
-                        block.i,
+                        block.o,
                         x - BLOCK_SIZE,
                         y + (i as f32 * BLOCK_SIZE),
                         tetromino.color(),
@@ -213,7 +270,7 @@ impl Game {
             Tetromino::S => {
                 for i in 1..3 {
                     draw_texture_ex(
-                        block.i,
+                        block.s,
                         x - (i as f32 * BLOCK_SIZE),
                         y + BLOCK_SIZE,
                         tetromino.color(),
@@ -225,7 +282,7 @@ impl Game {
                 }
                 for i in -1..1 {
                     draw_texture_ex(
-                        block.i,
+                        block.s,
                         x + (i as f32 * BLOCK_SIZE),
                         y,
                         tetromino.color(),
@@ -239,7 +296,7 @@ impl Game {
             Tetromino::T => {
                 for i in 0..1 {
                     draw_texture_ex(
-                        block.i,
+                        block.t,
                         x - BLOCK_SIZE,
                         y,
                         tetromino.color(),
@@ -251,7 +308,7 @@ impl Game {
                 }
                 for i in 0..3 {
                     draw_texture_ex(
-                        block.i,
+                        block.t,
                         x - (i as f32 * BLOCK_SIZE),
                         y + BLOCK_SIZE,
                         tetromino.color(),
@@ -265,7 +322,7 @@ impl Game {
             Tetromino::Z => {
                 for i in 1..3 {
                     draw_texture_ex(
-                        block.i,
+                        block.z,
                         x - (i as f32 * BLOCK_SIZE),
                         y,
                         tetromino.color(),
@@ -277,7 +334,7 @@ impl Game {
                 }
                 for i in -1..1 {
                     draw_texture_ex(
-                        block.i,
+                        block.z,
                         x + (i as f32 * BLOCK_SIZE),
                         y + BLOCK_SIZE,
                         tetromino.color(),
@@ -477,28 +534,68 @@ impl Game {
             );
         }
     }
+    fn mv(&mut self) {
+        if get_time() > self.time_since_move + 0.1 {
+            self.time_since_move = get_time();
+            let before = self.board;
+
+            for (y, seg) in before.iter().enumerate().rev() {
+                if y < 22 {
+                    for (x, seg) in seg.iter().enumerate() {
+                        match *seg {
+                            Some(Tetromino::I) | Some(Tetromino::J) | Some(Tetromino::L)
+                            | Some(Tetromino::O) | Some(Tetromino::T) => {
+                                if let None = self.board[y + 1][x] {
+                                    self.board[y + 1][x] = self.board[y][x];
+                                    self.board[y][x] = None;
+                                }
+                            }
+                            Some(Tetromino::S) | Some(Tetromino::Z) => {
+                                if let None = self.board[y + 1][x] {
+                                    self.board[y + 1][x] = self.board[y][x];
+                                    self.board[y][x] = None;
+                                }
+                            }
+                            None => {}
+                        }
+                    }
+                }
+            }
+        }
+
+        for (y, seg) in self.board.iter().enumerate() {
+            for (x, seg) in seg.iter().enumerate() {
+                match *seg {
+                    Some(_) => {
+                        draw_texture_ex(
+                            self.current_tetromino.texture(self.block),
+                            ((screen_width() / 2.) - (5. * BLOCK_SIZE)) + (x as f32 * BLOCK_SIZE),
+                            (-3. * BLOCK_SIZE) + (y as f32 * BLOCK_SIZE),
+                            self.current_tetromino.color(),
+                            DrawTextureParams {
+                                dest_size: Some(Vec2::new(BLOCK_SIZE, BLOCK_SIZE)),
+                                ..Default::default()
+                            },
+                        );
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
 }
 
 #[macroquad::main(window_conf)]
 async fn main() {
     let mut game = Game::new();
 
+    game.next_tetromino = rand::random();
     loop {
-        let x = get_time();
-        game.next_tetromino = rand::random();
-        while x + 0.25 > get_time() {
-            game.draw_boarder();
-            game.draw_text();
+        game.draw_boarder();
+        game.draw_text();
+        game.mv();
 
-            Game::draw_tetromino(
-                game.block,
-                game.next_tetromino,
-                screen_width() / 2.,
-                screen_height() / 2. - (3. * BLOCK_SIZE),
-            );
-
-            next_frame().await
-        }
+        next_frame().await
     }
 }
 
