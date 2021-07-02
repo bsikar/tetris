@@ -1,142 +1,163 @@
-use crate::tetromino::*;
-use ::rand;
-use macroquad::prelude::*;
+use crate::colors::*;
+use crate::tetrominos::*;
 
-const BLOCK_SIZE: f32 = 40.;
+use macroquad::input::{is_key_pressed, KeyCode};
+use macroquad::shapes::draw_rectangle;
+use rand::{thread_rng, Rng};
 
-#[derive(Debug, Copy, Clone)]
-struct Block {
-    i: Texture2D,
-    j: Texture2D,
-    l: Texture2D,
-    o: Texture2D,
-    s: Texture2D,
-    t: Texture2D,
-    z: Texture2D,
-    gray: Texture2D,
+const WIDTH: u8 = 10;
+const HEIGHT: u8 = 22;
+//const VISIBLE_HEIGHT: u8 = 20;
+const GRID_SIZE: f32 = 30.;
+
+enum GamePhase {
+    Play,
 }
 
-impl Block {
-    fn texture_from_tetromino(&self, tetromino: Tetromino) -> Texture2D {
-        use Tetromino::*;
-        match tetromino {
-            I => self.i,
-            J => self.j,
-            L => self.l,
-            O => self.o,
-            S => self.s,
-            T => self.t,
-            Z => self.z,
+#[derive(Copy, Clone)]
+struct PieceState {
+    index: u8,
+    offset_row: u8,
+    offset_col: u8,
+    rot: u8,
+}
+
+impl PieceState {
+    fn new() -> Self {
+        PieceState {
+            index: thread_rng().gen_range(0..7),
+            offset_row: 0,
+            offset_col: 0,
+            rot: 0,
         }
     }
 }
-/*
-    pub fn texture(&self, block: Tetris::Block) -> macroquad::texture::Texture2D {
-        match *self {
-            Tetromino::I => block.i,
-            Tetromino::J => block.j,
-            Tetromino::L => block.l,
-            Tetromino::O => block.o,
-            Tetromino::S => block.s,
-            Tetromino::T => block.t,
-            Tetromino::Z => block.z,
-        }
-    }
-
-*/
 
 pub struct Tetris {
-    current_tetromino: Tetromino,
-    //current_tetromino_rotation: u8,
-    block: Block,
-    board: [[Option<Color>; 10]; 23],
-    //active_board: [[Option<Tetromino>; 10]; 23],
-    //time_since_move: f64,
+    board: [u8; (WIDTH * HEIGHT) as usize],
+    piece: PieceState,
+    phase: GamePhase,
 }
 
 impl Tetris {
     pub fn new() -> Self {
-        let current_tetromino: Tetromino = rand::random();
-        let cyan_block = Texture2D::from_file_with_format(
-            include_bytes!("../assets/cyan_block.png"),
-            Some(ImageFormat::Png),
-        );
-        let gray_block = Texture2D::from_file_with_format(
-            include_bytes!("../assets/gray_block.png"),
-            Some(ImageFormat::Png),
-        );
-
         Tetris {
-            current_tetromino,
-            //current_tetromino_rotation: 0,
-            //time_since_move: 0.,
-            board: Tetris::fill_board(&current_tetromino),
-            block: Block {
-                i: cyan_block,
-                j: gray_block,
-                l: gray_block,
-                o: gray_block,
-                s: gray_block,
-                t: gray_block,
-                z: gray_block,
-                gray: gray_block,
-            },
+            board: [0; (WIDTH * HEIGHT) as usize],
+            piece: PieceState::new(),
+            phase: GamePhase::Play,
         }
     }
 
-    fn fill_board(current_tetromino: &Tetromino) -> [[Option<Color>; 10]; 23] {
-        let mut board = [[None; 10]; 23];
-        let x = current_tetromino.get_shape()[0];
-        for (i, x) in x.iter().enumerate() {
-            for (o, x) in x.iter().enumerate() {
-                board[i][5 + o] = *x;
+    pub fn update_game(&mut self) {
+        match &self.phase {
+            GamePhase::Play => self.update_game_play(),
+        }
+    }
+
+    fn update_game_play(&mut self) {
+        let mut piece = self.piece;
+
+        if is_key_pressed(KeyCode::Left) {
+            if piece.offset_col != 0 {
+                piece.offset_col -= 1;
             }
         }
-        board
-    }
-
-    pub fn draw_boarder(&self) {
-        for i in 0..20 {
-            draw_texture_ex(
-                self.block.gray,
-                900.,
-                i as f32 * BLOCK_SIZE,
-                WHITE,
-                DrawTextureParams {
-                    dest_size: Some(Vec2::new(BLOCK_SIZE, BLOCK_SIZE)),
-                    ..Default::default()
-                },
-            );
-            draw_texture_ex(
-                self.block.gray,
-                460.,
-                i as f32 * BLOCK_SIZE,
-                WHITE,
-                DrawTextureParams {
-                    dest_size: Some(Vec2::new(BLOCK_SIZE, BLOCK_SIZE)),
-                    ..Default::default()
-                },
-            );
+        if is_key_pressed(KeyCode::Right) {
+            piece.offset_col += 1;
+        }
+        if is_key_pressed(KeyCode::Up) {
+            piece.rot = (piece.rot + 1) % 4;
         }
 
-        for (y, seg) in self.board.iter().enumerate() {
-            for (x, seg) in seg.iter().enumerate() {
-                match *seg {
-                    Some(color) => {
-                        draw_texture_ex(
-                            self.block.texture_from_tetromino(self.current_tetromino),
-                            ((screen_width() / 2.) - (7. * BLOCK_SIZE)) + (x as f32 * BLOCK_SIZE),
-                            (-3. * BLOCK_SIZE) + ((y + 5) as f32 * BLOCK_SIZE),
-                            color,
-                            DrawTextureParams {
-                                dest_size: Some(Vec2::new(BLOCK_SIZE, BLOCK_SIZE)),
-                                ..Default::default()
-                            },
-                        );
+        if is_key_pressed(KeyCode::Down) {
+            piece.offset_row += 1;
+        }
+        if is_key_pressed(KeyCode::Space) {
+            if piece.offset_row != 0 {
+                piece.offset_row -= 1;
+            }
+        }
+
+        if self.check_piece_valid(piece) {
+            self.piece = piece;
+        }
+    }
+
+    fn board_value(&self, row: u8, col: u8) -> u8 {
+        self.board[(row * WIDTH + col) as usize]
+    }
+
+    fn check_piece_valid(&mut self, piece: PieceState) -> bool {
+        let tetromino = TETROMINOS[piece.index as usize];
+        for row in 0..tetromino.sides {
+            for col in 0..tetromino.sides {
+                let value = tetromino.get_value(row, col, piece.rot);
+
+                if value > 0 {
+                    let board_row = piece.offset_row + row;
+                    let board_col = piece.offset_col + col;
+
+                    if board_row >= HEIGHT {
+                        return false;
                     }
-                    _ => {}
+                    if board_col >= WIDTH {
+                        return false;
+                    }
+                    if self.board_value(board_row, board_col) > 0 {
+                        return false;
+                    }
                 }
             }
         }
+
+        true
+    }
+
+    fn draw_cell(row: u8, col: u8, value: u8, offset_x: u8, offset_y: u8) {
+        let row = row as f32;
+        let col = col as f32;
+        let offset_x = offset_x as f32;
+        let offset_y = offset_y as f32;
+
+        let base_color = BASE_COLORS[value as usize];
+        let light_color = LIGHT_COLORS[value as usize];
+        let dark_color = DARK_COLORS[value as usize];
+
+        let edge = GRID_SIZE / 8.;
+
+        let x = col * GRID_SIZE + offset_x;
+        let y = row * GRID_SIZE + offset_y;
+
+        draw_rectangle(x, y, GRID_SIZE, GRID_SIZE, dark_color);
+        draw_rectangle(x + edge, y, GRID_SIZE - edge, GRID_SIZE - edge, light_color);
+        draw_rectangle(
+            x + edge,
+            y + edge,
+            GRID_SIZE - edge * 2.,
+            GRID_SIZE - edge * 2.,
+            base_color,
+        );
+    }
+
+    fn draw_piece(&self, offset_x: u8, offset_y: u8) {
+        let tetromino = TETROMINOS[self.piece.index as usize];
+        for row in 0..tetromino.sides {
+            for col in 0..tetromino.sides {
+                let value = tetromino.get_value(row, col, self.piece.rot);
+                if value > 0 {
+                    Tetris::draw_cell(
+                        row + self.piece.offset_row,
+                        col + self.piece.offset_col,
+                        value,
+                        offset_x,
+                        offset_y,
+                    );
+                }
+            }
+        }
+    }
+
+    pub fn render_game(&mut self) {
+        self.draw_piece(0, 0);
     }
 }
