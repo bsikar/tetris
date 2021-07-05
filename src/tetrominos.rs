@@ -23,6 +23,7 @@ impl<'a> Tetromino<'a> {
 }
 
 const TETROMINO_1: [u8; 16] = [0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0];
+//const TETROMINO_1: [u8; 16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
 const TETROMINO_2: [u8; 4] = [2; 4];
 const TETROMINO_3: [u8; 9] = [0, 0, 0, 3, 3, 3, 0, 3, 0];
 const TETROMINO_4: [u8; 9] = [0, 4, 4, 4, 4, 0, 0, 0, 0];

@@ -18,7 +18,7 @@ enum GamePhase {
 struct PieceState {
     index: u8,
     offset_row: u8,
-    offset_col: u8,
+    offset_col: i16,
     rot: u8,
 }
 
@@ -58,9 +58,7 @@ impl Tetris {
         let mut piece = self.piece;
 
         if is_key_pressed(KeyCode::Left) {
-            if piece.offset_col != 0 {
-                piece.offset_col -= 1;
-            }
+            piece.offset_col -= 1;
         }
         if is_key_pressed(KeyCode::Right) {
             piece.offset_col += 1;
@@ -72,19 +70,18 @@ impl Tetris {
         if is_key_pressed(KeyCode::Down) {
             piece.offset_row += 1;
         }
-        if is_key_pressed(KeyCode::Space) {
-            if piece.offset_row != 0 {
-                piece.offset_row -= 1;
-            }
-        }
 
         if self.check_piece_valid(piece) {
             self.piece = piece;
         }
     }
 
-    fn board_value(&self, row: u8, col: u8) -> u8 {
-        self.board[(row * WIDTH + col) as usize]
+    fn board_value(&self, row: u8, col: i16) -> u8 {
+        let x = (row * WIDTH) as i16 + col;
+        if x < 0 {
+            return 0;
+        }
+        self.board[x as usize]
     }
 
     fn check_piece_valid(&mut self, piece: PieceState) -> bool {
@@ -95,12 +92,15 @@ impl Tetris {
 
                 if value > 0 {
                     let board_row = piece.offset_row + row;
-                    let board_col = piece.offset_col + col;
+                    let board_col = piece.offset_col + col as i16;
 
                     if board_row >= HEIGHT {
                         return false;
                     }
-                    if board_col >= WIDTH {
+                    if board_col >= WIDTH as i16 {
+                        return false;
+                    }
+                    if board_col < 0 {
                         return false;
                     }
                     if self.board_value(board_row, board_col) > 0 {
@@ -113,7 +113,7 @@ impl Tetris {
         true
     }
 
-    fn draw_cell(row: u8, col: u8, value: u8, offset_x: u8, offset_y: u8) {
+    fn draw_cell(row: u8, col: i16, value: u8, offset_x: u8, offset_y: u8) {
         let row = row as f32;
         let col = col as f32;
         let offset_x = offset_x as f32;
@@ -147,7 +147,7 @@ impl Tetris {
                 if value > 0 {
                     Tetris::draw_cell(
                         row + self.piece.offset_row,
-                        col + self.piece.offset_col,
+                        col as i16 + self.piece.offset_col,
                         value,
                         offset_x,
                         offset_y,
