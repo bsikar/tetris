@@ -1,3 +1,9 @@
+// TODO
+//
+// hard drop
+// ghost
+// levels - scores - speeds
+
 use crate::colors::*;
 use crate::tetrominos::*;
 
@@ -9,10 +15,6 @@ use rand::{thread_rng, Rng};
 const WIDTH: u8 = 10;
 const HEIGHT: u8 = 22;
 const GRID_SIZE: f32 = 30.;
-
-enum GamePhase {
-    Play,
-}
 
 #[derive(Copy, Clone)]
 struct PieceState {
@@ -36,7 +38,6 @@ impl PieceState {
 pub struct Tetris {
     board: [u8; (WIDTH * HEIGHT) as usize],
     piece: PieceState,
-    phase: GamePhase,
     tld: f64,
     tlm: f64,
 }
@@ -46,15 +47,8 @@ impl Tetris {
         Tetris {
             board: [0; (WIDTH * HEIGHT) as usize],
             piece: PieceState::new(),
-            phase: GamePhase::Play,
             tld: get_time(),
             tlm: get_time(),
-        }
-    }
-
-    pub fn update_game(&mut self) {
-        match &self.phase {
-            GamePhase::Play => self.update_game_play(),
         }
     }
 
@@ -103,7 +97,7 @@ impl Tetris {
         None
     }
 
-    fn update_game_play(&mut self) {
+    pub fn update_game(&mut self) {
         let mut piece = self.piece;
 
         if is_key_pressed(KeyCode::Up) {
