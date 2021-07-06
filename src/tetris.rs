@@ -1,14 +1,8 @@
-// TODO
-//
-// hard drop
-// ghost
-// levels - scores - speeds
-
 use crate::colors::*;
 use crate::tetrominos::*;
 
 use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
-use macroquad::shapes::draw_rectangle;
+use macroquad::shapes::{draw_rectangle, draw_rectangle_lines};
 use macroquad::time::get_time;
 use rand::{thread_rng, Rng};
 
@@ -77,7 +71,9 @@ impl Tetris {
         }
     }
 
-    fn hard_drop(&mut self) {}
+    fn hard_drop(&mut self) {
+        self.piece = self.get_lowest();
+    }
 
     fn is_row_filled(&mut self) -> Option<usize> {
         let x = [true; WIDTH as usize];
@@ -100,14 +96,14 @@ impl Tetris {
     pub fn update_game(&mut self) {
         let mut piece = self.piece;
 
+        if is_key_pressed(KeyCode::Space) {
+            self.hard_drop();
+        }
         if is_key_pressed(KeyCode::Up) {
             piece.rot = (piece.rot + 1) % 4;
             if self.check_piece_valid(piece) {
                 self.piece = piece;
             }
-        }
-        if is_key_pressed(KeyCode::Space) {
-            self.hard_drop();
         }
 
         if self.tlm + 0.125 < get_time() {
@@ -187,7 +183,7 @@ impl Tetris {
         true
     }
 
-    fn draw_cell(row: i16, col: i16, value: u8) {
+    fn draw_cell(row: i16, col: i16, value: u8, filled: bool) {
         let base_color = BASE_COLORS[value as usize];
         let light_color = LIGHT_COLORS[value as usize];
         let dark_color = DARK_COLORS[value as usize];
@@ -197,15 +193,19 @@ impl Tetris {
         let x = col as f32 * GRID_SIZE;
         let y = row as f32 * GRID_SIZE;
 
-        draw_rectangle(x, y, GRID_SIZE, GRID_SIZE, dark_color);
-        draw_rectangle(x + edge, y, GRID_SIZE - edge, GRID_SIZE - edge, light_color);
-        draw_rectangle(
-            x + edge,
-            y + edge,
-            GRID_SIZE - edge * 2.,
-            GRID_SIZE - edge * 2.,
-            base_color,
-        );
+        if filled {
+            draw_rectangle(x, y, GRID_SIZE, GRID_SIZE, dark_color);
+            draw_rectangle(x + edge, y, GRID_SIZE - edge, GRID_SIZE - edge, light_color);
+            draw_rectangle(
+                x + edge,
+                y + edge,
+                GRID_SIZE - edge * 2.,
+                GRID_SIZE - edge * 2.,
+                base_color,
+            );
+        } else {
+            draw_rectangle_lines(x, y, GRID_SIZE, GRID_SIZE, edge, dark_color);
+        }
     }
 
     fn draw_piece(&self) {
@@ -218,6 +218,41 @@ impl Tetris {
                         row as i16 + self.piece.offset_row,
                         col as i16 + self.piece.offset_col,
                         value,
+                        true,
+                    );
+                }
+            }
+        }
+    }
+
+    fn get_lowest(&mut self) -> PieceState {
+        let mut piece = self.piece;
+        for i in 0..HEIGHT {
+            piece = PieceState {
+                offset_row: (HEIGHT - i) as i16,
+                ..self.piece
+            };
+
+            if self.check_piece_valid(piece) {
+                break;
+            }
+        }
+        piece
+    }
+
+    fn draw_ghost(&mut self) {
+        let piece = self.get_lowest();
+
+        let tetromino = TETROMINOS[piece.index as usize];
+        for row in 0..tetromino.sides {
+            for col in 0..tetromino.sides {
+                let value = tetromino.get_value(row, col, piece.rot);
+                if value > 0 {
+                    Tetris::draw_cell(
+                        row as i16 + piece.offset_row,
+                        col as i16 + piece.offset_col,
+                        value,
+                        false,
                     );
                 }
             }
@@ -229,13 +264,14 @@ impl Tetris {
             for col in 0..WIDTH {
                 let value = self.board_value(row as i16, col as i16);
                 if value > 0 {
-                    Tetris::draw_cell(row as i16, col as i16, value);
+                    Tetris::draw_cell(row as i16, col as i16, value, true);
                 }
             }
         }
     }
 
     pub fn render_game(&mut self) {
+        self.draw_ghost();
         self.draw_piece();
         self.draw_board();
     }
