@@ -1,7 +1,7 @@
 use crate::colors::*;
 use crate::tetrominos::*;
 
-use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
+use macroquad::input::{is_key_pressed, KeyCode};
 use macroquad::shapes::{draw_rectangle, draw_rectangle_lines};
 use macroquad::time::get_time;
 use rand::{thread_rng, Rng};
@@ -33,7 +33,6 @@ pub struct Tetris {
     board: [u8; (WIDTH * HEIGHT) as usize],
     piece: PieceState,
     tld: f64,
-    tlm: f64,
 }
 
 impl Tetris {
@@ -42,7 +41,6 @@ impl Tetris {
             board: [0; (WIDTH * HEIGHT) as usize],
             piece: PieceState::new(),
             tld: get_time(),
-            tlm: get_time(),
         }
     }
 
@@ -94,33 +92,29 @@ impl Tetris {
     }
 
     pub fn update_game(&mut self) {
-        let mut piece = self.piece;
-
         if is_key_pressed(KeyCode::Space) {
             self.hard_drop();
-        }
-        if is_key_pressed(KeyCode::Up) {
-            piece.rot = (piece.rot + 1) % 4;
-            if self.check_piece_valid(piece) {
-                self.piece = piece;
-            }
+            self.merge_piece();
+            self.piece = PieceState::new();
         }
 
-        if self.tlm + 0.125 < get_time() {
-            if is_key_down(KeyCode::Left) {
-                piece.offset_col -= 1;
-            }
-            if is_key_down(KeyCode::Right) {
-                piece.offset_col += 1;
-            }
-            if self.check_piece_valid(piece) {
-                self.piece = piece;
-            }
-            self.tlm = get_time();
+        let mut piece = self.piece;
+
+        if is_key_pressed(KeyCode::Up) || is_key_pressed(KeyCode::W) {
+            piece.rot = (piece.rot + 1) % 4;
+        }
+        if is_key_pressed(KeyCode::Left) || is_key_pressed(KeyCode::A) {
+            piece.offset_col -= 1;
+        }
+        if is_key_pressed(KeyCode::Right) || is_key_pressed(KeyCode::D) {
+            piece.offset_col += 1;
+        }
+        if self.check_piece_valid(piece) {
+            self.piece = piece;
         }
 
         if self.tld + 0.25 < get_time() {
-            if is_key_down(KeyCode::Down) {
+            if is_key_pressed(KeyCode::Down) || is_key_pressed(KeyCode::S) {
                 piece.offset_row += 1;
             }
             if self.check_piece_valid(piece) {
@@ -226,18 +220,20 @@ impl Tetris {
     }
 
     fn get_lowest(&mut self) -> PieceState {
-        let mut piece = self.piece;
+        let mut piece1 = self.piece;
         for i in 0..HEIGHT {
-            piece = PieceState {
-                offset_row: (HEIGHT - i) as i16,
+            let piece2 = PieceState {
+                offset_row: i as i16,
                 ..self.piece
             };
 
-            if self.check_piece_valid(piece) {
+            if self.check_piece_valid(piece2) {
+                piece1 = piece2;
+            } else {
                 break;
             }
         }
-        piece
+        piece1
     }
 
     fn draw_ghost(&mut self) {
