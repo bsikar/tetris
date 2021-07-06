@@ -9,6 +9,7 @@ use rand::{thread_rng, Rng};
 const WIDTH: u8 = 10;
 const HEIGHT: u8 = 22;
 const GRID_SIZE: f32 = 30.;
+const DELAYS: [f64; 10] = [0.25, 0.22, 0.20, 0.18, 0.17, 0.16, 0.15, 0.14, 0.13, 0.125];
 
 #[derive(Copy, Clone)]
 struct PieceState {
@@ -33,6 +34,8 @@ pub struct Tetris {
     board: [u8; (WIDTH * HEIGHT) as usize],
     piece: PieceState,
     tld: f64,
+    num_removed: u8,
+    level: u8,
 }
 
 impl Tetris {
@@ -41,6 +44,8 @@ impl Tetris {
             board: [0; (WIDTH * HEIGHT) as usize],
             piece: PieceState::new(),
             tld: get_time(),
+            num_removed: 0,
+            level: 0,
         }
     }
 
@@ -113,7 +118,7 @@ impl Tetris {
             self.piece = piece;
         }
 
-        if self.tld + 0.25 < get_time() {
+        if self.tld + DELAYS[self.level as usize] < get_time() {
             if is_key_down(KeyCode::Down) || is_key_down(KeyCode::S) {
                 piece.offset_row += 1;
             }
@@ -126,6 +131,11 @@ impl Tetris {
         }
 
         if let Some(row) = self.is_row_filled() {
+            self.num_removed += 1;
+            self.num_removed %= 10;
+            if self.num_removed == 0 {
+                self.level += 1;
+            }
             for n in 0..(WIDTH as usize) {
                 self.board[(row * WIDTH as usize) + n] = 0;
             }
