@@ -1,7 +1,7 @@
 use crate::colors::*;
 use crate::tetrominos::*;
 
-use macroquad::input::{is_key_pressed, KeyCode};
+use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
 use macroquad::shapes::{draw_rectangle, draw_rectangle_lines};
 use macroquad::time::get_time;
 use rand::{thread_rng, Rng};
@@ -114,7 +114,7 @@ impl Tetris {
         }
 
         if self.tld + 0.25 < get_time() {
-            if is_key_pressed(KeyCode::Down) || is_key_pressed(KeyCode::S) {
+            if is_key_down(KeyCode::Down) || is_key_down(KeyCode::S) {
                 piece.offset_row += 1;
             }
             if self.check_piece_valid(piece) {
