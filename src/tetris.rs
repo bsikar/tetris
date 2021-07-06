@@ -1,8 +1,9 @@
 use crate::colors::*;
 use crate::tetrominos::*;
 
-use macroquad::input::{is_key_pressed, KeyCode};
+use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
 use macroquad::shapes::draw_rectangle;
+use macroquad::time::get_time;
 use rand::{thread_rng, Rng};
 
 const WIDTH: u8 = 10;
@@ -36,6 +37,8 @@ pub struct Tetris {
     board: [u8; (WIDTH * HEIGHT) as usize],
     piece: PieceState,
     phase: GamePhase,
+    tld: f64,
+    tlm: f64,
 }
 
 impl Tetris {
@@ -44,6 +47,8 @@ impl Tetris {
             board: [0; (WIDTH * HEIGHT) as usize],
             piece: PieceState::new(),
             phase: GamePhase::Play,
+            tld: get_time(),
+            tlm: get_time(),
         }
     }
 
@@ -78,27 +83,74 @@ impl Tetris {
         }
     }
 
-    fn update_game_play(&mut self) {
-        self.soft_drop();
+    fn hard_drop(&mut self) {}
 
+    fn is_row_filled(&mut self) -> Option<usize> {
+        let x = [true; WIDTH as usize];
+        for n in 0..(HEIGHT as usize) {
+            if self
+                .board
+                .iter()
+                .skip(n * WIDTH as usize)
+                .take(WIDTH as usize)
+                .map(|x| *x != 0)
+                .collect::<Vec<_>>()
+                == x
+            {
+                return Some(n);
+            }
+        }
+        None
+    }
+
+    fn update_game_play(&mut self) {
         let mut piece = self.piece;
 
-        if is_key_pressed(KeyCode::Left) {
-            piece.offset_col -= 1;
-        }
-        if is_key_pressed(KeyCode::Right) {
-            piece.offset_col += 1;
-        }
         if is_key_pressed(KeyCode::Up) {
             piece.rot = (piece.rot + 1) % 4;
+            if self.check_piece_valid(piece) {
+                self.piece = piece;
+            }
+        }
+        if is_key_pressed(KeyCode::Space) {
+            self.hard_drop();
         }
 
-        if is_key_pressed(KeyCode::Down) {
-            piece.offset_row += 1;
+        if self.tlm + 0.125 < get_time() {
+            if is_key_down(KeyCode::Left) {
+                piece.offset_col -= 1;
+            }
+            if is_key_down(KeyCode::Right) {
+                piece.offset_col += 1;
+            }
+            if self.check_piece_valid(piece) {
+                self.piece = piece;
+            }
+            self.tlm = get_time();
         }
 
-        if self.check_piece_valid(piece) {
-            self.piece = piece;
+        if self.tld + 0.25 < get_time() {
+            if is_key_down(KeyCode::Down) {
+                piece.offset_row += 1;
+            }
+            if self.check_piece_valid(piece) {
+                self.piece = piece;
+            }
+            self.soft_drop();
+
+            self.tld = get_time();
+        }
+
+        if let Some(row) = self.is_row_filled() {
+            for n in 0..(WIDTH as usize) {
+                self.board[(row * WIDTH as usize) + n] = 0;
+            }
+            for row in (1..=row as usize).rev() {
+                for n in (0..(WIDTH as usize)).rev() {
+                    self.board[(row * WIDTH as usize) + n] =
+                        self.board[((row - 1) * WIDTH as usize) + n];
+                }
+            }
         }
     }
 
