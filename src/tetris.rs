@@ -58,7 +58,13 @@ impl Tetris {
                 if value > 0 {
                     let row = row as i16 + self.piece.offset_row;
                     let col = col as i16 + self.piece.offset_col;
-                    self.board[(row * WIDTH as i16 + col) as usize] = value;
+                    let index = (row * WIDTH as i16 + col) as usize;
+
+                    if index < self.board.len() {
+                        self.board[(row * WIDTH as i16 + col) as usize] = value;
+                    } else {
+                        *self = Tetris::new();
+                    }
                 }
             }
         }
@@ -130,6 +136,10 @@ impl Tetris {
             self.tld = get_time();
         }
 
+        self.clear_lines();
+    }
+
+    fn clear_lines(&mut self) {
         if let Some(row) = self.is_row_filled() {
             self.num_removed += 1;
             self.num_removed %= 10;
