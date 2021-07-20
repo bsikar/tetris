@@ -36,6 +36,7 @@ pub struct Tetris {
     tld: f64,
     num_removed: u8,
     level: u8,
+    dt: f64,
 }
 
 impl Tetris {
@@ -46,6 +47,7 @@ impl Tetris {
             tld: get_time(),
             num_removed: 0,
             level: 0,
+            dt: get_time(),
         }
     }
 
@@ -114,11 +116,17 @@ impl Tetris {
         if is_key_pressed(KeyCode::Up) || is_key_pressed(KeyCode::W) {
             piece.rot = (piece.rot + 1) % 4;
         }
-        if is_key_pressed(KeyCode::Left) || is_key_pressed(KeyCode::A) {
-            piece.offset_col -= 1;
+        if is_key_down(KeyCode::Left) || is_key_down(KeyCode::A) {
+            if self.dt + 0.1 < get_time() {
+                piece.offset_col -= 1;
+                self.dt = get_time();
+            }
         }
-        if is_key_pressed(KeyCode::Right) || is_key_pressed(KeyCode::D) {
-            piece.offset_col += 1;
+        if is_key_down(KeyCode::Right) || is_key_down(KeyCode::D) {
+            if self.dt + 0.1 < get_time() {
+                piece.offset_col += 1;
+                self.dt = get_time();
+            }
         }
         if self.check_piece_valid(piece) {
             self.piece = piece;
