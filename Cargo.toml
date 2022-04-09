@@ -1,11 +1,11 @@
 [package]
 name = "tetris"
 version = "0.1.0"
-authors = ["Brighton Sikarskie <brighton.sikarskie@tuta.io>"]
+authors = ["Brighton Sikarskie <bsikar@tuta.io>"]
 edition = "2018"
 description = "A simple GUI rust tetris game"
 readme = "README.md"
-homepage = "https://github.com/bsikar/tetris"
+homepage = "https://bsikar.github.io/tetris/"
 repository = "https://github.com/bsikar/tetris"
 license = "MIT"
 keywords = ["gamedev", "graphics", "game", "gui"]
@@ -13,4 +13,3 @@ categories = ["games"]
 
 [dependencies]
 macroquad = "0.3.5"
-rand = "0.8.4"

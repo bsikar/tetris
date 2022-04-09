@@ -1,10 +1,10 @@
 use crate::colors::*;
 use crate::tetrominos::*;
+use macroquad::rand;
 
 use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
 use macroquad::shapes::{draw_rectangle, draw_rectangle_lines};
 use macroquad::time::get_time;
-use rand::{thread_rng, Rng};
 
 const WIDTH: u8 = 10;
 const HEIGHT: u8 = 22;
@@ -22,7 +22,7 @@ struct PieceState {
 impl PieceState {
     fn new() -> Self {
         PieceState {
-            index: thread_rng().gen_range(0..7),
+            index: rand::gen_range(0, 6),
             offset_row: -3,
             offset_col: 4,
             rot: 0,
