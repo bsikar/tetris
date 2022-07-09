@@ -41,6 +41,7 @@ pub struct Tetris {
 
 impl Tetris {
     pub fn new() -> Self {
+        rand::srand(macroquad::miniquad::date::now() as _);
         Tetris {
             board: [0; (WIDTH * HEIGHT) as usize],
             piece: PieceState::new(),
