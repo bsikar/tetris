@@ -1,5 +1,7 @@
 use crate::colors::*;
 use crate::tetrominos::*;
+use macroquad::color_u8;
+use macroquad::prelude::Color;
 use macroquad::rand;
 
 use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
@@ -213,8 +215,8 @@ impl Tetris {
 
         let edge = GRID_SIZE / 8.;
 
-        let x = col as f32 * GRID_SIZE;
-        let y = row as f32 * GRID_SIZE;
+        let x = col as f32 * GRID_SIZE + 50.0;
+        let y = row as f32 * GRID_SIZE + 50.0;
 
         if filled {
             draw_rectangle(x, y, GRID_SIZE, GRID_SIZE, dark_color);
@@ -296,6 +298,9 @@ impl Tetris {
     }
 
     pub fn render_game(&mut self) {
+        // draw an outer boarder
+        let color = color_u8!(0x28, 0x28, 0x28, 0xFF);
+        draw_rectangle(50.0, 0.0, 300.0, 710.0, color);
         self.draw_ghost();
         self.draw_piece();
         self.draw_board();

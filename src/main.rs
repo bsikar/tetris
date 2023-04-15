@@ -20,8 +20,8 @@ async fn main() {
 fn window_conf() -> Conf {
     Conf {
         window_title: "Tetris".to_owned(),
-        window_width: 300,
-        window_height: 660,
+        window_width: 400,
+        window_height: 760,
         window_resizable: false,
         ..Default::default()
     }
