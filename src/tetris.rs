@@ -91,20 +91,14 @@ impl Tetris {
 
     fn is_row_filled(&mut self) -> Option<usize> {
         let x = [true; WIDTH as usize];
-        for n in 0..(HEIGHT as usize) {
-            if self
+        (0..(HEIGHT as usize)).find(|&n| self
                 .board
                 .iter()
                 .skip(n * WIDTH as usize)
                 .take(WIDTH as usize)
                 .map(|x| *x != 0)
                 .collect::<Vec<_>>()
-                == x
-            {
-                return Some(n);
-            }
-        }
-        None
+                == x)
     }
 
     pub fn update_game(&mut self) {
@@ -119,17 +113,13 @@ impl Tetris {
         if is_key_pressed(KeyCode::Up) || is_key_pressed(KeyCode::W) {
             piece.rot = (piece.rot + 1) % 4;
         }
-        if is_key_down(KeyCode::Left) || is_key_down(KeyCode::A) {
-            if self.dt + 0.1 < get_time() {
-                piece.offset_col -= 1;
-                self.dt = get_time();
-            }
+        if (is_key_down(KeyCode::Left) || is_key_down(KeyCode::A)) && self.dt + 0.1 < get_time() {
+            piece.offset_col -= 1;
+            self.dt = get_time();
         }
-        if is_key_down(KeyCode::Right) || is_key_down(KeyCode::D) {
-            if self.dt + 0.1 < get_time() {
-                piece.offset_col += 1;
-                self.dt = get_time();
-            }
+        if (is_key_down(KeyCode::Right) || is_key_down(KeyCode::D)) && self.dt + 0.1 < get_time() {
+            piece.offset_col += 1;
+            self.dt = get_time();
         }
         if self.check_piece_valid(piece) {
             self.piece = piece;
@@ -160,7 +150,7 @@ impl Tetris {
             for n in 0..(WIDTH as usize) {
                 self.board[(row * WIDTH as usize) + n] = 0;
             }
-            for row in (1..=row as usize).rev() {
+            for row in (1..=row).rev() {
                 for n in (0..(WIDTH as usize)).rev() {
                     self.board[(row * WIDTH as usize) + n] =
                         self.board[((row - 1) * WIDTH as usize) + n];
@@ -170,7 +160,7 @@ impl Tetris {
     }
 
     fn board_value(&self, row: i16, col: i16) -> u8 {
-        let x = (row * WIDTH as i16) as i16 + col;
+        let x = (row * WIDTH as i16) + col;
 
         if x < 0 {
             return 0;
