@@ -25,10 +25,10 @@ To use this Tetris game, you can either play it in your web browser by visiting 
 
 Once you have Rust installed, follow these steps:
 
-1. Clone the repository: git clone https://github.com/bsikar/tetris.git
-2. Navigate into the cloned repository: cd tetris
-3. Build the game: cargo build --release
-4. Run the game: cargo run --release
+1. Clone the repository: <code>git clone https://github.com/bsikar/tetris.git</code>
+2. Navigate into the cloned repository: <code>cd tetris</code>
+3. Build the game: <code>cargo build --release</code>
+4. Run the game: <code>cargo run --release</code>
 
 ## Contributions
 
